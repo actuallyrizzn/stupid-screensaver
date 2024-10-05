@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Classic Screensaver Modes</title>
+    <style>
+        body {
+            margin: 0; /* Remove default margin to ensure the screen is fully used */
+            overflow: hidden; /* Prevent scrollbars from appearing */
+            background-color: black; /* Set background color to black for classic screensaver look */
+        }
+        #menu {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            z-index: 1000;
+        }
+        .star {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background-color: white;
+            transform-origin: center;
+        }
+    </style>
+</head>
+<body>
+    <div id="menu">
+        <select id="screensaverMode" onchange="changeScreensaverMode()">
+            <option value="matrix">Matrix Code Rain</option>
+            <option value="starfield">Starfield</option>
+            <option value="fireworks">Fireworks</option>
+            <option value="mystify">Mystify</option>
+        </select>
+    </div>
+    <div id="screensaverContainer"></div>
+    <canvas id="matrixCanvas" style="display: none;"></canvas>
+    <canvas id="fireworksCanvas" style="display: none;"></canvas>
+    <canvas id="mystifyCanvas" style="display: none;"></canvas>
+    <script>
+        let currentMode = 'matrix';
+        const intervals = {}; // Object to store all interval IDs
+        const matrixCanvas = document.getElementById('matrixCanvas');
+        const fireworksCanvas = document.getElementById('fireworksCanvas');
+        const mystifyCanvas = document.getElementById('mystifyCanvas');
+        const fireworksCtx = fireworksCanvas.getContext('2d');
+        const matrixCtx = matrixCanvas.getContext('2d');
+        const mystifyCtx = mystifyCanvas.getContext('2d');
+        const screensaverContainer = document.getElementById('screensaverContainer');
+
+        // Function to create and animate the Matrix code effect using canvas
+        const createMatrix = () => {
+            matrixCanvas.style.display = 'block';
+            matrixCanvas.width = window.innerWidth;
+            matrixCanvas.height = window.innerHeight;
+            const columns = Math.floor(window.innerWidth / 20);
+            const drops = Array(columns).fill(0); // Initialize drops array for each column
+
+            intervals.matrix = setInterval(() => {
+                matrixCtx.fillStyle = 'rgba(0, 0, 0, 0.05)'; // Create a slight fade effect
+                matrixCtx.fillRect(0, 0, matrixCanvas.width, matrixCanvas.height);
+                matrixCtx.fillStyle = '#0F0'; // Set text color to green
+                matrixCtx.font = '20px monospace'; // Set font for the matrix characters
+
+                // Draw each character at its respective column position
+                drops.forEach((y, index) => {
+                    const text = String.fromCharCode(0x30A0 + Math.floor(Math.random() * 96)); // Generate random katakana character
+                    const x = index * 20;
+                    matrixCtx.fillText(text, x, y);
+                    drops[index] = y > matrixCanvas.height || Math.random() > 0.975 ? 0 : y + 20; // Reset drop or move it down
+                });
+            }, 50);
+        };
+
+        // Function to create and animate stars for the starfield effect
+        const createStarfield = () => {
+            for (let i = 0; i < 150; i++) {
+                const star = document.createElement('div');
+                star.classList.add('star');
+                
+                // Set the initial position of the star around the center point
+                star.style.top = window.innerHeight / 2 + (Math.random() - 0.5) * window.innerHeight + 'px';
+                star.style.left = window.innerWidth / 2 + (Math.random() - 0.5) * window.innerWidth + 'px';
+                
+                // Set a random speed for each star to create depth effect
+                const speed = 10 + Math.random() * 20;
+                star.dataset.speed = speed;
+                
+                // Append the star to the screensaver container
+                screensaverContainer.appendChild(star);
+            }
+
+            intervals.starfield = setInterval(() => {
+                document.querySelectorAll('.star').forEach(star => {
+                    let top = parseFloat(star.style.top);
+                    let left = parseFloat(star.style.left);
+                    const speed = parseFloat(star.dataset.speed);
+                    
+                    // Calculate direction away from the center (simulate rushing past)
+                    const deltaX = left - window.innerWidth / 2;
+                    const deltaY = top - window.innerHeight / 2;
+                    
+                    // Move the star outwards at its speed
+                    top += deltaY / 100 * speed;
+                    left += deltaX / 100 * speed;
+                    
+                    // Reset the star to the center if it moves out of bounds
+                    if (top < 0 || top > window.innerHeight || left < 0 || left > window.innerWidth) {
+                        top = window.innerHeight / 2 + (Math.random() - 0.5) * window.innerHeight * 0.1; // Reset near the center
+                        left = window.innerWidth / 2 + (Math.random() - 0.5) * window.innerWidth * 0.1; // Reset near the center
+                    }
+                    
+                    star.style.top = top + 'px';
+                    star.style.left = left + 'px';
+                });
+            }, 30);
+        };
+
+        // Function to create and animate the Mystify effect using canvas
+        const createMystify = () => {
+            mystifyCanvas.style.display = 'block';
+            mystifyCanvas.width = window.innerWidth;
+            mystifyCanvas.height = window.innerHeight;
+
+            // Define four points that will move around the screen
+            const points = [
+                { x: Math.random() * mystifyCanvas.width, y: Math.random() * mystifyCanvas.height, vx: 2, vy: 2 },
+                { x: Math.random() * mystifyCanvas.width, y: Math.random() * mystifyCanvas.height, vx: -2, vy: 2 },
+                { x: Math.random() * mystifyCanvas.width, y: Math.random() * mystifyCanvas.height, vx: 2, vy: -2 },
+                { x: Math.random() * mystifyCanvas.width, y: Math.random() * mystifyCanvas.height, vx: -2, vy: -2 }
+            ];
+
+            let colorIndex = 0;
+            const colors = [
+                'rgba(255, 0, 0, 0.7)',
+                'rgba(0, 255, 0, 0.7)',
+                'rgba(0, 0, 255, 0.7)',
+                'rgba(255, 255, 0, 0.7)',
+                'rgba(0, 255, 255, 0.7)',
+                'rgba(255, 0, 255, 0.7)'
+            ];
+
+            intervals.mystify = setInterval(() => {
+                mystifyCtx.fillStyle = 'rgba(0, 0, 0, 0.1)'; // Create a slight fade effect for trailing lines
+                mystifyCtx.fillRect(0, 0, mystifyCanvas.width, mystifyCanvas.height);
+                mystifyCtx.strokeStyle = colors[colorIndex]; // Set the color for the lines
+                mystifyCtx.lineWidth = 2;
+
+                // Draw lines connecting the points
+                mystifyCtx.beginPath();
+                mystifyCtx.moveTo(points[0].x, points[0].y);
+                points.forEach((point, index) => {
+                    if (index > 0) {
+                        mystifyCtx.lineTo(point.x, point.y);
+                    }
+                });
+                mystifyCtx.closePath();
+                mystifyCtx.stroke();
+
+                // Update point positions
+                points.forEach(point => {
+                    point.x += point.vx;
+                    point.y += point.vy;
+
+                    // Bounce off the walls
+                    if (point.x <= 0 || point.x >= mystifyCanvas.width) {
+                        point.vx *= -1; // Reverse direction on x-axis
+                    }
+                    if (point.y <= 0 || point.y >= mystifyCanvas.height) {
+                        point.vy *= -1; // Reverse direction on y-axis
+                    }
+                });
+
+                // Cycle through colors more gradually
+                if (Math.random() < 0.02) { // Change color occasionally to make the transition more gradual
+                    colorIndex = (colorIndex + 1) % colors.length;
+                }
+            }, 30);
+        };
+
+        // Function to create and animate the Fireworks effect using canvas
+        const createFireworks = () => {
+            fireworksCanvas.style.display = 'block';
+            fireworksCanvas.width = window.innerWidth;
+            fireworksCanvas.height = window.innerHeight;
+
+            const fireworks = []; // Array to store active fireworks
+
+            const createFirework = () => {
+                // Create a new firework object with random properties
+                const firework = {
+                    x: Math.random() * fireworksCanvas.width, // Starting x position
+                    y: fireworksCanvas.height, // Starting y position at the bottom
+                    targetY: Math.random() * fireworksCanvas.height / 2, // Random target height
+                    speed: 5 + Math.random() * 5, // Random speed
+                    particles: [], // Array to store particles after explosion
+                    exploded: false // Track whether the firework has exploded
+                };
+                fireworks.push(firework);
+            };
+
+            intervals.fireworks = setInterval(() => {
+                fireworksCtx.fillStyle = 'rgba(0, 0, 0, 0.2)'; // Create a slight fade effect for trailing particles
+                fireworksCtx.fillRect(0, 0, fireworksCanvas.width, fireworksCanvas.height);
+
+                fireworks.forEach((firework, index) => {
+                    if (!firework.exploded) {
+                        // Draw the firework rocket
+                        fireworksCtx.fillStyle = 'white';
+                        fireworksCtx.fillRect(firework.x, firework.y, 2, 10);
+
+                        // Move the firework up
+                        firework.y -= firework.speed;
+
+                        // Check if it reached the target height
+                        if (firework.y <= firework.targetY) {
+                            firework.exploded = true;
+                            // Create particles for explosion
+                            for (let i = 0; i < 100; i++) {
+                                const angle = Math.random() * 2 * Math.PI; // Random direction
+                                const speed = Math.random() * 5; // Random speed
+                                firework.particles.push({
+                                    x: firework.x,
+                                    y: firework.y,
+                                    vx: Math.cos(angle) * speed, // Velocity x-component
+                                    vy: Math.sin(angle) * speed, // Velocity y-component
+                                    alpha: 1 // Initial opacity
+                                });
+                            }
+                        }
+                    } else {
+                        // Draw and move particles
+                        firework.particles.forEach(particle => {
+                            fireworksCtx.fillStyle = `rgba(255, 255, 255, ${particle.alpha})`;
+                            fireworksCtx.fillRect(particle.x, particle.y, 2, 2);
+                            particle.x += particle.vx; // Update x position
+                            particle.y += particle.vy; // Update y position
+                            particle.alpha -= 0.02; // Decrease opacity
+                        });
+                        // Remove particles that have faded
+                        firework.particles = firework.particles.filter(p => p.alpha > 0);
+                        // Remove the firework if all particles are gone
+                        if (firework.particles.length === 0) {
+                            fireworks.splice(index, 1);
+                        }
+                    }
+                });
+
+                // Occasionally create a new firework
+                if (Math.random() < 0.1) {
+                    createFirework();
+                }
+            }, 30);
+        };
+
+        // Function to change screensaver mode
+        const changeScreensaverMode = () => {
+            // Clear existing elements
+            screensaverContainer.innerHTML = ''; // Remove all stars for starfield
+            Object.values(intervals).forEach(clearInterval); // Clear all existing intervals
+            fireworksCtx.clearRect(0, 0, fireworksCanvas.width, fireworksCanvas.height); // Clear fireworks canvas
+            matrixCtx.clearRect(0, 0, matrixCanvas.width, matrixCanvas.height); // Clear matrix canvas
+            mystifyCtx.clearRect(0, 0, mystifyCanvas.width, mystifyCanvas.height); // Clear mystify canvas
+            matrixCanvas.style.display = 'none';
+            fireworksCanvas.style.display = 'none';
+            mystifyCanvas.style.display = 'none';
+            
+            // Determine which screensaver mode to activate
+            currentMode = document.getElementById('screensaverMode').value;
+            if (currentMode === 'matrix') {
+                createMatrix();
+            } else if (currentMode === 'starfield') {
+                createStarfield();
+            } else if (currentMode === 'fireworks') {
+                createFireworks();
+            } else if (currentMode === 'mystify') {
+                createMystify();
+            }
+        };
+
+        // Start with the default mode (Matrix Code Rain)
+        createMatrix();
+    </script>
+</body>
+</html>
